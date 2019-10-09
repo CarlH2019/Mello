@@ -1,4 +1,7 @@
 const $logoutButton = $('#logout');
+const $newBoardButton = $('#new-board');
+const $boardNameInput = $('#board-name');
+const $saveBoardButton = $('#save-board');
 
 
 let user;
@@ -17,6 +20,16 @@ function init() {
   $('.welcome h1').text('Welcome ' + user.email + '!');
 }
 
+function handleBoardCreate(event) {
+  event.preventDefault();  //prevents from from submitting itself
+
+  let boardName = $boardNameInput.val().trim();
+
+  $boardNameInput.val('');
+
+  console.log(boardName);
+}
+
 
 function handleLogout() {
   $.ajax({
@@ -29,3 +42,5 @@ function handleLogout() {
 }
 
 $logoutButton.on('click', handleLogout);
+$newBoardButton.on('click', MicroModal.show.bind(null, 'create-board'));
+$saveBoardButton.on('click', handleBoardCreate);
