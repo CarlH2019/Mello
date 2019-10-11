@@ -11,7 +11,10 @@ const $editListDeleteButton = $('#edit-list .delete');
 const $editCardInput = $('#edit-card textarea');
 const $editCardSaveButton = $('#edit-card .save');
 const $editCardDeleteButton = $('#edit-card .delete');
-
+const $contributorModalButton = $('#contributors'); //stores a reference to the #contributors element to the $contributorModalButton variable
+const $contributorModalInput = $('#contributor-email'); // these next two get references to the modal’s input field and Add button
+const $contributorModalSaveButton = $('#contribute .save');
+const $contributorModalList = $('#contributors-content ul'); //saves a reference to the ul using jQuery
 
 let board;  //creates a Global board variable
 
@@ -110,6 +113,17 @@ function renderBoard() {
   $boardContainer.append($lists);
 
   makeSortable();
+  renderContributors();
+}
+
+function renderContributors() {
+  let $contributorListItems = board.users.map(function(user) {
+    let $contributorListItem = $('<li>').text(user.email);
+    return $contributorListItem;
+  });
+
+  $contributorModalList.empty();
+  $contributorModalList.append($contributorListItems);
 }
 
 function makeSortable() {
@@ -334,6 +348,70 @@ function handleCardDelete(event) {
   });
 }
 
+function displayMessage(msg, type='hidden') { //If a type argument isn’t provided, then the hidden class will be applied to the message, making it invisible.
+  $('#contribute .message')
+    .attr('class', `message ${type}`)
+    .text(msg);
+}
+
+function handleContributorSave(event) {  //whenever the contributor modal Save button is clicked, the value of the modal’s input field is printed to the console
+  event.preventDefault();  //stops the form containing the button from trying to submit itself
+
+   let emailRegex = /.+@.+\..+/;
+
+  let contributorEmail = $contributorModalInput.val().trim();
+
+  $contributorModalInput.val('');
+
+  if (!emailRegex.test(contributorEmail)) {
+    displayMessage(`Must provide a valid email address`, 'danger');
+    return;
+  }
+
+  let contributor = board.users.find(function(user) {
+    return user.email === contributorEmail;
+  });
+
+  if (contributor) {
+    displayMessage(
+      `${contributorEmail} already has access to the board`,
+      'danger'
+    );
+    return;
+  }
+
+  $.ajax({
+    url: '/api/user_boards',
+    method: 'POST',
+    data: {
+      email: contributorEmail,
+      board_id: board.id
+    }
+  }).then(function() {
+    init();
+    displayMessage(
+        `Successfully added ${contributorEmail} to the board`,
+        'success'
+      );
+  })
+
+    .catch(function() {
+      displayMessage(
+        `Cannot find user with email: ${contributorEmail}`,
+        'danger'
+      );
+    });
+}
+
+function openContributorModal() {
+  $contributorModalInput.val('');
+  displayMessage('');
+
+  MicroModal.show('contribute');
+}
+
+$contributorModalSaveButton.on('click', handleContributorSave);
+$contributorModalButton.on('click', openContributorModal);
 $saveCardButton.on('click', handleCardCreate);
 $saveListButton.on('click', handleListCreate);
 $logoutButton.on('click', handleLogout);
